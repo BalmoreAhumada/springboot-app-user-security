@@ -45,7 +45,7 @@ public class UserController {
 
     @GetMapping("/page/{page}")
     public Page<User> listUsersPageable(@PathVariable Integer page) {
-        Pageable pageable  = PageRequest.of(page, 5);
+        Pageable pageable  = PageRequest.of(page, 2);
         return this.userService.findAll(pageable);
     }
 
