@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,9 +33,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+    private final UserService userService;
 
-    @Autowired
-    private UserService userService;
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping()
     public List<User> listUsers() {
@@ -45,7 +46,7 @@ public class UserController {
 
     @GetMapping("/page/{page}")
     public Page<User> listUsersPageable(@PathVariable Integer page) {
-        Pageable pageable  = PageRequest.of(page, 2);
+        Pageable pageable = PageRequest.of(page, 2);
         return this.userService.findAll(pageable);
     }
 
@@ -67,14 +68,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest user, BindingResult result) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest user,
+            BindingResult result) {
 
         if (result.hasErrors()) {
             return validation(result);
         }
 
         Optional<User> userOptional = this.userService.update(user, id);
-        
+
         if (userOptional.isPresent()) {
             return ResponseEntity.ok(userOptional.orElseThrow());
         }
