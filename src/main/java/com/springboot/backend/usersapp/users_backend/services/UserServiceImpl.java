@@ -3,6 +3,7 @@ package com.springboot.backend.usersapp.users_backend.services;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,7 +26,8 @@ public class UserServiceImpl implements UserService {
     private RoleRepository roleRepository;
     private PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
@@ -34,13 +36,21 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public List<User> findAll() {
-        return (List) this.userRepository.findAll();
+        return ((List<User>) this.userRepository.findAll()).stream().map(user -> {
+            boolean admin = user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+            user.setAdmin(admin);
+            return user;
+        }).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     @Override
     public Page<User> findAll(Pageable pageable) {
-        return this.userRepository.findAll(pageable);
+        return this.userRepository.findAll(pageable).map(user -> {
+            boolean admin = user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+            user.setAdmin(admin);
+            return user;
+        });
     }
 
     @Transactional(readOnly = true)
@@ -57,7 +67,6 @@ public class UserServiceImpl implements UserService {
         return this.userRepository.save(user);
     }
 
-    
     @Override
     public Optional<User> update(UserRequest user, Long id) {
         Optional<User> userOptional = this.userRepository.findById(id);
@@ -67,19 +76,19 @@ public class UserServiceImpl implements UserService {
             userDb.setName(user.getName());
             userDb.setLastname(user.getLastname());
             userDb.setEmail(user.getEmail());
-            
+
             userDb.setRoles(getRoleOptional(user));
             return Optional.of(userRepository.save(userDb));
         }
         return Optional.empty();
     }
-    
+
     @Transactional
     @Override
     public void deleteById(Long id) {
         this.userRepository.deleteById(id);
     }
-    
+
     private List<Role> getRoleOptional(IUser user) {
         List<Role> roles = new ArrayList<>();
         Optional<Role> roleOptional = this.roleRepository.findByName("ROLE_USER");
